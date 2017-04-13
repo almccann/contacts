@@ -1,4 +1,5 @@
 import csv
+import re
 
 google = 'google.csv'
 linkedin = 'linkedin.csv'
@@ -24,6 +25,9 @@ def return_google_dupe(last_name, first_name):
 
         return dupe
 
+def parse_phone_number(regex, number):
+    return re.fullmatch(regex, number)
+
 with open(linkedin, encoding='utf-8') as linkedin_csv, open(google, encoding='utf-16') as google_csv, open(new_google, 'w', encoding='utf-16') as new_google_csv:
     google_reader = csv.reader(google_csv)
     fieldnames = next(google_reader)
@@ -35,6 +39,10 @@ with open(linkedin, encoding='utf-8') as linkedin_csv, open(google, encoding='ut
     # update duplicate (exiting) Google contacts with LinkedIn tags and additional information
     for row in google_dict_reader:
         dupe = return_linkedin_dupe(row['Family Name'], row['Given Name'])
+        australian_mobile_1 = parse_phone_number('0\d{3}\s\d{3}\s\d{3}', row['Phone 1 - Value'])
+        australian_mobile_2 = parse_phone_number('0\d{3}\s\d{3}\s\d{3}', row['Phone 2 - Value'])
+        australian_phone_1 = parse_phone_number('0\d{1}\s\d{4}\s\d{4}', row['Phone 1 - Value'])
+        australian_phone_2 = parse_phone_number('0\d{1}\s\d{4}\s\d{4}', row['Phone 2 - Value'])
         if dupe: 
             print('updating existing Google contact ' + row['Given Name'] + ' ' + row['Family Name'])
             tags = dupe['Tags'][1:-1].split(', ') 
@@ -54,6 +62,10 @@ with open(linkedin, encoding='utf-8') as linkedin_csv, open(google, encoding='ut
             else:
                 row['E-mail 4 - Value'] = dupe['EmailAddress']
                 row['E-mail 4 - Type'] = '* Work'
+        if australian_mobile_1 or australian_phone_1:
+            row['Phone 1 - Value'] = row['Phone 1 - Value'].replace('0', '+61 ', 1) 
+        if australian_mobile_2 or australian_phone_2:
+            row['Phone 2 - Value'] = row['Phone 2 - Value'].replace('0', '+61 ', 1)
         google_writer.writerow(row)
        
     # add new LinkedIn connections to Google contacts
